@@ -36,7 +36,7 @@ export NIC_NAME="${NIC_NAME:-sglang-nic}"
 # --- SGLang / model -------------------------------------------------------
 export SGLANG_IMAGE="${SGLANG_IMAGE:-lmsysorg/sglang:latest}"
 export SGLANG_PORT="${SGLANG_PORT:-30000}"   # bound to loopback only on the VM
-export MODEL_PATH="${MODEL_PATH:-Qwen/Qwen3.6-27B}"
+export MODEL_PATH="${MODEL_PATH:-Qwen/Qwen3.6-35B-A3B-FP8}"
 export TP_SIZE="${TP_SIZE:-1}"            # 1 GPU on NC40adis_H100_v5
 # Hugging Face token (required if the model is gated). Export before running:
 #   export HF_TOKEN=hf_xxxxxxxxxxxxxxxx

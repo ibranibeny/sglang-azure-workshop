@@ -94,11 +94,30 @@ else
     -p 127.0.0.1:${SGLANG_PORT}:${SGLANG_PORT} \
     -v /opt/hf-cache:/root/.cache/huggingface \
     -e HF_TOKEN=${HF_TOKEN} \
+    -e SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 \
+    -e SGLANG_ENABLE_SPEC_V2=1 \
+    -e TOKENIZERS_PARALLELISM=false \
     ${SGLANG_IMAGE} \
     python3 -m sglang.launch_server \
       --model-path ${MODEL_PATH} \
       --tp ${TP_SIZE} \
-      --host 0.0.0.0 --port ${SGLANG_PORT}
+      --host 0.0.0.0 --port ${SGLANG_PORT} \
+      --context-length 196608 \
+      --mem-fraction-static 0.85 \
+      --max-running-requests 4 \
+      --chunked-prefill-size 8192 \
+      --reasoning-parser qwen3 \
+      --tool-call-parser qwen3_coder \
+      --attention-backend fa3 \
+      --sampling-backend flashinfer \
+      --mamba-backend triton \
+      --mamba-scheduler-strategy extra_buffer \
+      --speculative-algorithm NEXTN \
+      --speculative-num-steps 1 \
+      --speculative-eagle-topk 1 \
+      --speculative-num-draft-tokens 2 \
+      --enable-metrics \
+      --trust-remote-code
 fi
 
 # --- Caddy (HTTPS + API-key gateway) ---
