@@ -1,8 +1,8 @@
-# SGLang + Qwen3.6-27B on Azure (H100)
+# SGLang + Qwen3.6-35B-A3B-FP8 on Azure (H100)
 
 Deploys a **secure, HTTPS, API-key-protected** OpenAI-compatible inference
 server using [SGLang](https://github.com/sgl-project/sglang) serving
-[`Qwen/Qwen3.6-27B`](https://huggingface.co/Qwen/Qwen3.6-27B) on a single
+[`Qwen/Qwen3.6-35B-A3B-FP8`](https://huggingface.co/Qwen/Qwen3.6-35B-A3B-FP8) on a single
 `Standard_NC80adis_H100_v5` VM (2× H100 NVL GPUs) in **Indonesia Central**.
 
 A Caddy reverse proxy on the VM terminates TLS and enforces the API key; the
@@ -57,7 +57,7 @@ Test the endpoint (replace `<PUBLIC_IP>`; `-k` accepts the self-signed cert):
 curl -k https://<PUBLIC_IP>/v1/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -H 'Content-Type: application/json' \
-  -d '{"model":"Qwen/Qwen3.6-27B","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"Qwen/Qwen3.6-35B-A3B-FP8","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 A request without a valid key returns `401 Unauthorized`. Plain HTTP to the

@@ -1,6 +1,6 @@
 # SGLang on Azure H100 — OpenAI-Compatible Endpoint
 
-Deploy **Qwen3.6-27B** (or any HuggingFace model) on Azure with a single H100 GPU, served via [SGLang](https://github.com/sgl-project/sglang) behind a Caddy HTTPS reverse-proxy with API-key authentication.
+Deploy **Qwen3.6-35B-A3B-FP8** (or any HuggingFace model) on Azure with a single H100 GPU, served via [SGLang](https://github.com/sgl-project/sglang) behind a Caddy HTTPS reverse-proxy with API-key authentication.
 
 ```
 https://openai.contoso.day/v1/chat/completions
@@ -71,7 +71,7 @@ sequenceDiagram
         CA-->>C: 401 Unauthorized
     else Valid API Key
         CA->>SG: Forward to 127.0.0.1:30000
-        SG->>GPU: Run inference (Qwen3.6-27B)
+        SG->>GPU: Run inference (Qwen3.6-35B-A3B-FP8)
         GPU-->>SG: Generated tokens
         SG-->>CA: JSON response
         CA-->>C: 200 OK + completion
@@ -121,7 +121,7 @@ git clone https://github.com/ibranibeny/sglang-azure-workshop.git
 cd sglang-azure-workshop
 
 # Edit deploy/config.sh to customize:
-# - MODEL_PATH (default: Qwen/Qwen3.6-27B)
+# - MODEL_PATH (default: Qwen/Qwen3.6-35B-A3B-FP8)
 # - TLS_DOMAIN (your domain, or leave empty for IP-based access)
 # - LOCATION (Azure region)
 ```
@@ -157,7 +157,7 @@ curl https://openai.contoso.day/v1/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "Qwen/Qwen3.6-27B",
+    "model": "Qwen/Qwen3.6-35B-A3B-FP8",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
@@ -193,7 +193,7 @@ Edit `deploy/config.sh`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MODEL_PATH` | `Qwen/Qwen3.6-27B` | HuggingFace model ID |
+| `MODEL_PATH` | `Qwen/Qwen3.6-35B-A3B-FP8` | HuggingFace model ID |
 | `VM_SIZE` | `Standard_NC40ads_H100_v5` | 1× H100 NVL (94GB) |
 | `LOCATION` | `indonesiacentral` | Azure region |
 | `TLS_DOMAIN` | `openai.contoso.day` | Domain for Let's Encrypt (empty = self-signed) |
@@ -270,7 +270,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="Qwen/Qwen3.6-27B",
+    model="Qwen/Qwen3.6-35B-A3B-FP8",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is the capital of France?"}
