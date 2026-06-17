@@ -1,0 +1,18 @@
+# Secrets — never commit (FR-011, SC-008)
+.secrets/
+*.key
+*.pem
+
+# Caddy-rendered config that embeds the API key
+Caddyfile.rendered
+
+# Local SSH keys if generated here
+id_rsa
+id_rsa.pub
+
+# Temporary files from debugging/deployment
+_*.txt
+_*.log
+_*.json
+_*.sh
+_*.out
