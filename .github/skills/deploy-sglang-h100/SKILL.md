@@ -49,7 +49,21 @@ flowchart TD
     Op -->|Idle / save cost| D1[az vm deallocate]
     Op -->|Remove everything| D2[99-destroy.sh]
     D1 -.restart later.-> P5
+
+    classDef startNode fill:#1f2937,stroke:#0f172a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#fde68a,stroke:#b45309,stroke-width:2px,color:#7c2d12
+    classDef modeA fill:#ddd6fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95
+    classDef modeB fill:#bbf7d0,stroke:#15803d,stroke-width:2px,color:#14532d
+    classDef teardown fill:#fecaca,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d
+
+    class Start startNode
+    class Q,Op decision
+    class A1,A2,A3,A4 modeA
+    class P1,P2,P3,P4,P5,P6,P7 modeB
+    class D1,D2 teardown
 ```
+
+> Legend — ⬛ start · 🟨 decision · 🟪 Mode A (generate) · 🟩 Mode B (operate) · 🟥 teardown.
 
 ## Prerequisites (check first)
 
