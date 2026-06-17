@@ -1,0 +1,31 @@
+# Caddyfile template for the SGLang HTTPS gateway.
+# Rendered by 05-run-sglang.sh: the placeholders below are substituted and
+# the result is written to the VM as /opt/caddy/Caddyfile. Do not commit the
+# rendered file (it embeds the API key); see .gitignore.
+#
+# Placeholders (each is wrapped in double underscores in the body below; the
+# names here are deliberately written WITHOUT the underscores so the renderer's
+# global-substitution does not rewrite this comment):
+#   GLOBAL_BLOCK   global options (ACME email / CA) or empty for self-signed
+#   SITE_ADDRESS   ":443" (self-signed) or the DNS name (Let's Encrypt)
+#   TLS_LINE       explicit self-signed cert "tls" line, or "" for Let's Encrypt
+#   API_KEY        the secret bearer token required on inference requests
+#   SGLANG_PORT    loopback port of the SGLang server on the VM
+
+__GLOBAL_BLOCK__
+
+__SITE_ADDRESS__ {
+	__TLS_LINE__
+
+	# Liveness probe: unauthenticated so external uptime checks work.
+	handle /health {
+		reverse_proxy 127.0.0.1:__SGLANG_PORT__
+	}
+
+	# Everything else (the OpenAI API) requires the secret bearer key.
+	handle {
+		@unauthorized not header Authorization "Bearer __API_KEY__"
+		respond @unauthorized "Unauthorized" 401
+		reverse_proxy 127.0.0.1:__SGLANG_PORT__
+	}
+}

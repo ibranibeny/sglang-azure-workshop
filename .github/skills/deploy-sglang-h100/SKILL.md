@@ -1,6 +1,6 @@
 ---
 name: deploy-sglang-h100
-description: 'Deploy an OpenAI-compatible LLM inference endpoint on a single Azure H100 (94GB) GPU using SGLang behind a Caddy HTTPS + API-key gateway. Use when: deploy Qwen on Azure, serve an LLM on H100, set up an SGLang endpoint, host a HuggingFace model on an Azure GPU VM, deploy an OpenAI-compatible API, change the served model, or test tool calling. Handles model sizing for 94GB VRAM, region/quota selection (default indonesiacentral), VM provisioning, NSG/TLS, readiness wait, and end-to-end testing. Orchestrates the deploy/ scripts in this repo.'
+description: 'Generate and run the deployment code for an OpenAI-compatible LLM inference endpoint on a single Azure H100 (94GB) GPU using SGLang behind a Caddy HTTPS + API-key gateway. Use when: deploy Qwen on Azure, serve an LLM on H100, scaffold or generate SGLang deploy scripts, set up an SGLang endpoint, host a HuggingFace model on an Azure GPU VM, deploy an OpenAI-compatible API, change the served model, or test tool calling. Can SCAFFOLD the deploy/ toolkit from bundled reference templates into a fresh workspace, then customize it for the chosen model. Handles model sizing for 94GB VRAM, region/quota selection (default indonesiacentral), VM provisioning, NSG/TLS, readiness wait, and end-to-end testing.'
 argument-hint: 'Optional: model id (e.g. Qwen/Qwen3.6-35B-A3B-FP8) and/or region'
 ---
 
@@ -8,14 +8,48 @@ argument-hint: 'Optional: model id (e.g. Qwen/Qwen3.6-35B-A3B-FP8) and/or region
 
 Provision and operate an OpenAI-compatible inference endpoint on a single **H100 NVL (94 GB)**
 Azure VM. SGLang serves the model on loopback; Caddy terminates TLS and enforces an API key.
-This skill **orchestrates the existing [`deploy/`](../../../deploy) scripts** — it does not
-re-implement them. The single source of configuration is [`deploy/config.sh`](../../../deploy/config.sh).
+
+This skill works in **two modes**:
+
+- **Mode A — Generate the code.** When the `deploy/` toolkit does not exist (a fresh workspace),
+  scaffold it from the skill's bundled reference templates in [`./assets/deploy/`](./assets/deploy),
+  then customize it for the chosen model and region.
+- **Mode B — Operate the toolkit.** Run the scripts in order to provision, launch, test, and tear
+  down the endpoint.
+
+The bundled templates in [`./assets/deploy/`](./assets/deploy) are a faithful copy of this repo's
+proven `deploy/` scripts — they are the **reference implementation** the skill generates from. The
+single source of configuration is always `config.sh`.
 
 ## When to Use
 
+- **Scaffold a new deployment** — generate the `deploy/` scripts into a workspace that doesn't have them.
 - Deploy Qwen (or another HuggingFace model that fits 94 GB) as an OpenAI-compatible API.
-- Swap the served model on an existing deployment.
+- Swap the served model on an existing deployment (regenerate the launch flags for the new model).
 - Re-launch after the VM was deallocated, or verify tool calling end-to-end.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    Start([Invoke skill]) --> Q{deploy/ exists<br/>in workspace?}
+    Q -->|No — fresh workspace| A1[Mode A: copy assets/deploy/* into deploy/]
+    A1 --> A2[Set MODEL_PATH, LOCATION, TLS_DOMAIN in config.sh]
+    A2 --> A3[Match 05-run-sglang.sh flags to the model profile]
+    A3 --> A4[Set Base + Model in test-tool-calling.ps1]
+    A4 --> P1
+    Q -->|Yes| P1[1. Choose model + region, check H100 quota]
+    P1 --> P2[2. 00-genkey.sh — generate API key]
+    P2 --> P3[3. 01-deploy.sh — provision VM + GPU driver]
+    P3 --> P4[4. 03b-open-nsg-ports.sh — open 443/80/22]
+    P4 --> P5[5. 05-run-sglang.sh — launch SGLang + Caddy]
+    P5 --> P6[6. Wait for /health 200 — cold start ~6-11 min]
+    P6 --> P7[7. test-tool-calling.ps1 from Windows PowerShell]
+    P7 --> Op{Next?}
+    Op -->|Idle / save cost| D1[az vm deallocate]
+    Op -->|Remove everything| D2[99-destroy.sh]
+    D1 -.restart later.-> P5
+```
 
 ## Prerequisites (check first)
 
@@ -27,7 +61,31 @@ re-implement them. The single source of configuration is [`deploy/config.sh`](..
 4. **Terminal**: commands below are bash/WSL. Public-endpoint **testing must run from Windows
    PowerShell** — WSL is blocked by GSA (see [Gotchas](#gotchas-hard-won-lessons)).
 
-## Procedure
+## Mode A — Generate the deployment toolkit
+
+Do this **only if `deploy/` does not already exist** in the workspace (or the user explicitly wants
+a fresh copy). If `deploy/` is already present, skip to **Mode B**.
+
+1. **Copy the templates** from [`./assets/deploy/`](./assets/deploy) into a `deploy/` folder at the
+   workspace root — every file, including the dotfile `.gitignore`, `Caddyfile.tmpl`, and
+   `cloud-init.yaml`. Keep filenames exactly (the scripts call each other by name).
+2. **Set the model + region** in `deploy/config.sh`: `MODEL_PATH`, `LOCATION`, and `TLS_DOMAIN`
+   (empty = self-signed cert; a DNS name you control = Let's Encrypt). The template ships with the
+   workshop defaults (`Qwen/Qwen3.6-35B-A3B-FP8`, `indonesiacentral`, `openai.contoso.day`) — change
+   `TLS_DOMAIN` to your own domain or leave it empty, since you won't own the example one.
+3. **Match the launch flags to the model.** The template `deploy/05-run-sglang.sh` ships with
+   **Profile A** (hybrid Qwen3.6-35B). For any other model family, rewrite the
+   `python3 -m sglang.launch_server` flag block to the matching profile in the
+   [model catalog](./references/model-catalog.md#flag-profiles) — drop the `--mamba-*` /
+   `--speculative-*` flags and set the correct `--tool-call-parser` / `--reasoning-parser`.
+4. **Update the test script** `deploy/test-tool-calling.ps1`: set `$Base` to your endpoint
+   (`https://<domain-or-ip>`) and `$Model` to the exact served model id.
+5. **Make the scripts executable** and confirm secrets stay out of git:
+   `chmod +x deploy/*.sh`, and verify `deploy/.gitignore` lists `.secrets/`.
+
+The generated `deploy/` folder is now ready — continue with Mode B.
+
+## Mode B — Operate the deployment toolkit
 
 Run everything from the `deploy/` directory: `cd deploy`. Each script sources `config.sh`.
 
@@ -182,4 +240,5 @@ bash 99-destroy.sh         # deletes the resource group and everything in it
 ## References
 
 - [Model catalog & VRAM sizing for H100 94 GB](./references/model-catalog.md)
+- Bundled deploy templates — the reference implementation this skill generates from: [`./assets/deploy/`](./assets/deploy)
 - Repo overview: [`README.md`](../../../README.md) · deploy details: [`deploy/README.md`](../../../deploy/README.md)
