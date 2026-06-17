@@ -281,6 +281,63 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
+## VS Code Copilot Integration
+
+Use this endpoint as a custom model in **GitHub Copilot Chat** (Chat & Agent mode) by adding it to your VS Code `chatLanguageModels.json`.
+
+### 1. Locate the config file
+
+| OS | Path |
+|----|------|
+| Windows | `%APPDATA%\Code\User\chatLanguageModels.json` |
+| macOS | `~/Library/Application Support/Code/User/chatLanguageModels.json` |
+| Linux | `~/.config/Code/User/chatLanguageModels.json` |
+
+> The file lives in the same `User` folder as `settings.json`. Create it if it doesn't exist.
+
+### 2. Add the custom endpoint
+
+```jsonc
+[
+  {
+    "name": "Azure H100",
+    "vendor": "customendpoint",
+    "apiKey": "${input:chat.lm.secret.azure-h100}",
+    "apiType": "chat-completions",
+    "models": [
+      {
+        "id": "Qwen/Qwen3.6-35B-A3B-FP8",
+        "name": "Qwen 3.6 35B FP8 (192K)",
+        "url": "https://openai.contoso.day/v1/chat/completions",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 131072,
+        "maxOutputTokens": 65536
+      }
+    ]
+  }
+]
+```
+
+| Field | Value | Notes |
+|-------|-------|-------|
+| `vendor` | `customendpoint` | Required for any OpenAI-compatible server |
+| `apiType` | `chat-completions` | Uses the `/v1/chat/completions` route |
+| `apiKey` | `${input:...}` | VS Code prompts once and stores the key in the OS secret store. You can also paste the key inline (less secure). |
+| `id` | `Qwen/Qwen3.6-35B-A3B-FP8` | Must match the model served by SGLang (`MODEL_PATH`) |
+| `url` | `https://openai.contoso.day/v1/chat/completions` | Your Caddy HTTPS endpoint |
+| `toolCalling` | `true` | Enables Agent-mode tool calls (`qwen3_coder` parser) |
+| `maxInputTokens` | `131072` | 128K context window |
+| `maxOutputTokens` | `65536` | Max generation length |
+
+### 3. Select the model
+
+1. Reload VS Code (**Developer: Reload Window**).
+2. Open Copilot Chat → model picker → choose **Qwen 3.6 35B FP8 (192K)**.
+3. On first use, paste your API key (`cat deploy/.secrets/api_key`) when prompted.
+
+> ⚠️ Custom endpoints work in **Chat & Agent mode only** — not inline ghost-text completion.
+
 ## License
 
 MIT
